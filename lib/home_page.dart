@@ -1,6 +1,8 @@
 import 'dart:developer';
-
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fluffdo/constants.dart';
 import 'package:uuid/uuid.dart';
@@ -74,42 +76,58 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(title: Text("ToDO")),
-      floatingActionButton: Consumer(builder: (context, ref, child) {
-        return FloatingActionButton(
-          child: const Icon(Icons.add),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (BuildContext context) {
-                return buttomSheetWidget(context);
-              },
-            );
-          },
-        );
-      }),
-      body: Column(
+      backgroundColor: const Color(0xffe6e6e6),
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        leading: Image.asset("assets/images/cat_face.png"),
+        title: Text("Fluffdo", style: GoogleFonts.pacifico(fontSize: 24)),
+        backgroundColor: const Color(0xffe6e6e6),
+      ),
+      body: Stack(
         children: [
-          const FilterWidget(),
-          Consumer(builder: (context, ref, child) {
-            final filter = ref.watch(tasksStatusProvider);
-            switch (filter) {
-              case TasksStatus.all:
-                return TasksListWidget(
-                  provider: allTasksProvider,
-                );
-              case TasksStatus.done:
-                return TasksListWidget(
-                  provider: tasksAreDone,
-                );
-              case TasksStatus.notDone:
-                return TasksListWidget(
-                  provider: tasksAreNotDone,
-                );
-            }
-          }),
+          Column(
+            children: [
+              const FilterWidget(),
+              Consumer(builder: (context, ref, child) {
+                final filter = ref.watch(tasksStatusProvider);
+                switch (filter) {
+                  case TasksStatus.all:
+                    return TasksListWidget(
+                      provider: allTasksProvider,
+                    );
+                  case TasksStatus.done:
+                    return TasksListWidget(
+                      provider: tasksAreDone,
+                    );
+                  case TasksStatus.notDone:
+                    return TasksListWidget(
+                      provider: tasksAreNotDone,
+                    );
+                }
+              }),
+            ],
+          ),
+          Positioned(
+              bottom: -10,
+              right: 10,
+              child: Consumer(builder: (context, ref, child) {
+                return SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: InkWell(
+                    child: Image.asset("assets/images/cat_paw.png"),
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (BuildContext context) {
+                          return buttomSheetWidget(context);
+                        },
+                      );
+                    },
+                  ),
+                ).animate(autoPlay: true).moveY(begin: 0, end: 10);
+              }))
         ],
       ),
     );
@@ -214,25 +232,67 @@ class TasksListWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasks = ref.watch(provider);
     return Expanded(
-        child: ListView.builder(
-            itemCount: tasks.length,
-            itemBuilder: (context, index) {
-              final task = tasks.elementAt(index);
-              return ListTile(
-                title: Text(
-                  task.description,
-                  style: TextStyle(
-                      decoration: task.isDone
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none),
-                ),
-                trailing: Checkbox(
-                    value: task.isDone,
-                    onChanged: (value) {
-                      ref.read(allTasksProvider.notifier).update(task, value!);
-                    }),
-              );
-            }));
+        child: tasks.isNotEmpty
+            ? ListView.builder(
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks.elementAt(index);
+                  return Container(
+                      height: 140,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                            image: AssetImage("assets/images/one_cat.png"),
+                            fit: BoxFit.fill),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 85.0, left: 80),
+                            child: SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.6,
+                              child: Text(
+                                task.description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.pacifico(
+                                    decoration: task.isDone
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 25, left: 10.0),
+                            child: Transform.scale(
+                              scale: 1.4,
+                              child: Checkbox(
+                                  fillColor:
+                                      MaterialStateProperty.resolveWith<Color>(
+                                          (Set<MaterialState> states) =>
+                                              const Color(0xff61484b)),
+                                  shape: const CircleBorder(),
+                                  value: task.isDone,
+                                  onChanged: (value) {
+                                    ref
+                                        .read(allTasksProvider.notifier)
+                                        .update(task, value!);
+                                  }),
+                            ),
+                          )
+                        ],
+                      ));
+                })
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset("assets/images/no_task.png"),
+                  Text(
+                    "There is no Tasks !",
+                    style: GoogleFonts.pacifico(fontSize: 18),
+                  ),
+                ],
+              ));
   }
 }
 
